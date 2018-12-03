@@ -9,15 +9,18 @@ public class Atlas_teleopClass extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         //Inset config file
         AtlasClass base = new AtlasClass(hardwareMap);
-        //Declare controller buttons
+
 
 
         waitForStart();
 
         while (opModeIsActive()) {
-            //Update controller inputs
 
-
+            base.drive();
+            base.extend();
+            base.dumpAndLift();
+            base.collectionFlip();
+            base.collectionSpin();
 
         }
     }
