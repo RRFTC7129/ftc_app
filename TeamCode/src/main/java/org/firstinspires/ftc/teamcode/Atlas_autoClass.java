@@ -14,6 +14,6 @@ public class Atlas_autoClass extends LinearOpMode {
 
         waitForStart();
 
-        
+
     }
 }

@@ -28,25 +28,26 @@ public class AtlasClass extends LinearOpMode {
     double speed;
     Orientation angles;
     double rightX;
+
     private ElapsedTime dumping = new ElapsedTime();
 
 
 
 
     AtlasClass(HardwareMap hardwareMap) throws InterruptedException {
-        rb = hardwareMap.dcMotor.get("rbDriveM");
+        rb = hardwareMap.dcMotor.get("rb");
         rb.setPower(0);
         rb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        lb = hardwareMap.dcMotor.get("lbDriveM");
+        lb = hardwareMap.dcMotor.get("lb");
         lb.setPower(0);
         lb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        rf = hardwareMap.dcMotor.get("rfDriveM");
+        rf = hardwareMap.dcMotor.get("rf");
         rf.setPower(0);
         rf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        lf = hardwareMap.dcMotor.get("lfDriveM");
+        lf = hardwareMap.dcMotor.get("lf");
         lf.setPower(0);
         lf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
@@ -66,7 +67,7 @@ public class AtlasClass extends LinearOpMode {
         collectSpinnerM.setPower(0);
         collectSpinnerM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        dumpS = hardwareMap.servo.get("deliveryS");
+        dumpS = hardwareMap.servo.get("dumpS");
         dumpS.setPosition(0);
 
         BNO055IMU.Parameters parameters_IMU = new BNO055IMU.Parameters();
@@ -81,13 +82,13 @@ public class AtlasClass extends LinearOpMode {
 
     }
 
-    public void drive(){
+    public void drive(float leftStickY, float leftStickX, float rightStickX){
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
 
-        speed = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-        angle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
+        speed = Math.hypot(leftStickX, leftStickY);
+        angle = Math.atan2(leftStickY, leftStickX) - Math.PI / 4;
         angle = angle + angles.firstAngle;
-        rightX = gamepad1.right_stick_x;
+        rightX = rightStickX;
 
 
 
@@ -96,15 +97,11 @@ public class AtlasClass extends LinearOpMode {
         lb.setPower(-(speed * (Math.cos(angle)) + rightX));
         rb.setPower((speed * (Math.sin(angle))) - rightX);
 
-        telemetry.addData("lb pwoer", lb.getPower());
-        telemetry.addData("rb pwoer", rb.getPower());
-        telemetry.addData("rf pwoer", rf.getPower());
-        telemetry.addData("lf pwoer", lf.getPower());
-        telemetry.update();
+
     }
 
-    public void dumpAndLift(){
-        if(gamepad2.right_bumper){
+    public void dumpAndLift(boolean rightBumper, float rightStickY){
+        if(rightBumper){
             dumpS.setPosition(1);
             dumping.reset();
         }
@@ -116,23 +113,23 @@ public class AtlasClass extends LinearOpMode {
             liftM.setPower(0.3);
         }
         else {
-            liftM.setPower(-gamepad2.right_stick_y);
+            liftM.setPower(-rightStickY);
 
         }
     }
 
-    public void collectionSpin(){
+    public void collectionSpin(boolean dpadUp, boolean dpadDown, boolean dpadLeft){
         if     (gamepad2.dpad_up)   collectSpinnerM.setPower(0.6);
         else if(gamepad2.dpad_down) collectSpinnerM.setPower(-0.6);
         else if(gamepad2.dpad_left) collectSpinnerM.setPower(0);
     }
 
-    public void collectionFlip() {
+    public void collectionFlip(float rightTrigger, float leftTrigger) {
         collectFlipperM.setPower(gamepad2.right_trigger - gamepad2.left_trigger);
     }
 
-    public void extend(){
-        extendM.setPower(gamepad2.left_stick_y);
+    public void extend(float leftStick){
+        extendM.setPower(leftStick);
     }
 
     //never actually run this, just threw it in so that we can call this a linear opMode for telemetry data and controller inputs
