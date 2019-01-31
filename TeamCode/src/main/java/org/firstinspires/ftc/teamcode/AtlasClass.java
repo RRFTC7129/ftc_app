@@ -48,6 +48,7 @@ public class AtlasClass extends LinearOpMode {
     Boolean goldAligned = false;
     private ColorSensor color;
     private int redMargin = 160;
+    float rfPow, lfPow, rbPow, lbPow, liftPower, dumpPos, collectPower, collectFlipPower, extendPower;
 
     private ElapsedTime buttoning = new ElapsedTime();
 
@@ -120,29 +121,32 @@ public class AtlasClass extends LinearOpMode {
     }
 
     //Teleop Functions\\
-    public void drive(float leftStickY, float leftStickX, float rightStickX) {
+    public Object[] drive() {
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
 
-        speed = Math.hypot(leftStickX, leftStickY);
-        angle = Math.atan2(leftStickY, leftStickX) - Math.PI / 4;
+        speed = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
+        angle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
         angle = angle + angles.firstAngle;
-        rightX = rightStickX;
+        rightX = gamepad1.right_stick_x;
 
 
-        lf.setPower(-(speed * (Math.sin(angle)) + rightX));
-        rf.setPower((speed * (Math.cos(angle))) - rightX);
-        lb.setPower(-(speed * (Math.cos(angle)) + rightX));
-        rb.setPower((speed * (Math.sin(angle))) - rightX);
+        lfPow = (float)(-(speed * (Math.sin(angle)) + rightX));
+        rfPow = (float)((speed * (Math.cos(angle))) - rightX);
+        lbPow = (float)(-(speed * (Math.cos(angle)) + rightX));
+        rbPow = (float)((speed * (Math.sin(angle))) - rightX);
+
+        return new Object[] {rfPow, lfPow, rbPow, lbPow};
+
 
 
     }
 
-    public float dumpAndLift(float liftPower) { //note to self, think i've fixed up the lifting, just need to put the setting of servo position in
+    public Object[] dumpAndLift() { //note to self, think i've fixed up the lifting, just need to put the setting of servo position in
         if (gamepad2.right_bumper || gamepad1.right_bumper) {
-            dumpS.setPosition(1);
+            dumpPos = (float)1;
             dumping.reset();
         } else {
-            dumpS.setPosition(0);
+            dumpPos = (float)0;
         }
 
         if (dumping.milliseconds() < 100 || gamepad2.left_bumper) {
@@ -190,23 +194,24 @@ public class AtlasClass extends LinearOpMode {
             currentStage = LiftStage.IDLE;
             liftPower = gamepad2.left_stick_y;
         }
-        return liftPower;
+        return new Object[] {liftPower, dumpPos};
+
 
     }
 
-    public float collectionSpin(float collectPower){
+    public float collectionSpin(){
         collectPower = gamepad2.left_trigger - gamepad2.right_trigger;
         return collectPower;
     }
 
-    public float collectionFlip(float collectFlipPower) {
+    public float collectionFlip() {
         if     (gamepad2.dpad_up)   collectFlipPower = (float)-0.6;
         else if(gamepad2.dpad_down) collectFlipPower = (float)0.6;
         else if(gamepad2.dpad_left) collectFlipPower = (float)0;
         return collectFlipPower;
     }
 
-    public float extend(float extendPower){         extendPower = gamepad2.left_stick_y;
+    public float extend(){         extendPower = gamepad2.left_stick_y;
     return extendPower;}
 
 //Autonomous Functions\\

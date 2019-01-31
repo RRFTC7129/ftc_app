@@ -50,6 +50,7 @@ public class CharonTeleOp extends OpMode {
     private ElapsedTime buttoning = new ElapsedTime();
     private ElapsedTime popOFF = new ElapsedTime();
     private ElapsedTime revThat = new ElapsedTime();
+    private ElapsedTime dropLift = new ElapsedTime();
 
 
     private enum LiftStage {
@@ -120,6 +121,7 @@ public class CharonTeleOp extends OpMode {
 
         if(gamepad2.right_bumper || gamepad1.right_bumper){
             dumpS.setPosition(1);
+            revThat.reset();
             dumping.reset();
         }
         else {
@@ -177,6 +179,9 @@ public class CharonTeleOp extends OpMode {
         } else {
             currentStage = LiftStage.IDLE;
             liftM.setPower(-gamepad2.left_stick_y);
+            if(gamepad2.left_stick_y == 0 && !gamepad1.right_bumper && !gamepad2.right_bumper && revThat.milliseconds() < 1000){
+                liftM.setPower(-0.1);
+            }
         }
 //        if(gamepad2.y && buttoning.milliseconds() > 300){
 //            target = target + 50;

@@ -725,6 +725,77 @@ sleep(1000);
 
     }
 
+    public void followPartner(){
+
+        if (pos == 0){
+            imuTurn(-30);
+            encoderDriveForward(38, 0.5, 0.5);
+
+            encoderDriveRight(38, -0.5, -0.5);
+            imuTurn(30);
+
+        }
+
+        else if (pos == 1){
+            imuTurn(-10);
+            encoderDriveForward(46, 0, 0.5);
+
+            encoderDriveRight(46, 0, -0.5);
+            imuTurn(10);
+
+        }
+
+        else if(pos == 2){
+            imuTurn(25);
+            encoderDriveForward(50, -0.5, 0.5);
+
+            encoderDriveRight(50, 0.5, -0.5);
+            imuTurn(-25);
+
+        }
+        imuTurn(-90);
+        encoderDriveForward(40, 0.5, 0);
+        imuTurn(-90);
+        encoderDriveRight(20, 0, -0.5);
+        imuTurn(90);
+
+        if (pos == 0){
+            imuTurn(-25);
+            encoderDriveForward(36, 0.5, 0.5);
+            imuTurn(70);
+            encoderDriveForward(20, -0.5, 0.5);
+
+            scoreMarker();
+
+        }
+
+        else if (pos == 1){
+            encoderDriveForward(46, 0, 0.5);
+            imuTurn(45);
+
+            scoreMarker();
+
+            }
+
+        else if(pos == 2){
+            imuTurn(30);
+            encoderDriveForward(47, -0.5, 0.5);
+            imuTurn(-75);
+            encoderDriveForward(10, -0.5, 0.5);
+
+            encoderDriveRight(7, 0.5, -0.5);
+
+
+            encoderDriveForward(20, 0.5, 0.5);
+
+            scoreMarker();
+
+        }
+
+
+    }
+
+
 
 
     @Override
@@ -774,7 +845,7 @@ pos = 0;
 
         liftM = hardwareMap.dcMotor.get("liftM");
         liftM.setPower(0);
-        liftM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        liftM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         extendM = hardwareMap.dcMotor.get("extendM");
         extendM.setPower(0);
@@ -899,6 +970,8 @@ sleep(2000);
 //        liftM.setPower(0);
 //
 sleep(wait);
+
+
 
         if(side) {
             if(two) {

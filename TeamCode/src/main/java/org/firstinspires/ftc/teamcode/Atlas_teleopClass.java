@@ -4,7 +4,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 @TeleOp(name="AtlasTeleopClass", group="Opmode")
-@Disabled
 public class Atlas_teleopClass extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -20,7 +19,7 @@ public class Atlas_teleopClass extends LinearOpMode {
 //        float rightStickY2;
 //        float leftStickY2;
 //        boolean rightBumper2;
-//        AtlasClass base = new AtlasClass(hardwareMap);
+        AtlasClass base = new AtlasClass(hardwareMap);
 
 
 
@@ -43,7 +42,13 @@ public class Atlas_teleopClass extends LinearOpMode {
 //            base.dumpAndLift(rightBumper2, rightStickY2);
 //            base.collectionFlip(rightTrigger2, lefttrigger2);
 //            base.collectionSpin(dpadUp2, dpadDown2, dpadLeft2);
+        base.drive();
+        base.collectionSpin();
+        base.collectionFlip();
+        base.dumpAndLift();
+        base.extend();
 
+        telemetry.addData("gucci", "gang");
 
 
         }
