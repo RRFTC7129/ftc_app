@@ -3,10 +3,10 @@ package org.firstinspires.ftc.teamcode;
 import com.disnodeteam.dogecv.CameraViewDisplay;
 import com.disnodeteam.dogecv.DogeCV;
 import com.disnodeteam.dogecv.detectors.roverrukus.GoldAlignDetector;
-import com.disnodeteam.dogecv.detectors.roverrukus.SamplingOrderDetector;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -17,73 +17,46 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.opencv.core.Rect;
 
-import java.io.FileWriter;
-import java.io.PrintWriter;
-
-@Autonomous (name="Chair Autionomous",group="Opmode")
-
+@Autonomous (name="Charon Autonomous",group="Opmode")
 public class CharonAutonomous extends LinearOpMode {
 
     DcMotor collectFlipperM, lb, rf, lf, rb, liftM, extendM, collectSpinnerM;
     private GoldAlignDetector detector;
     double angle;
-    Servo dumpS, lock;
+    Servo dumpS, lock, clampL, clampR;
     private BNO055IMU imu;
     double speed;
     Orientation angles;
     double rightX;
     int pos = 0;
     boolean side, marker, two;
+    boolean follow = false;
     String goldPosition;
     Boolean goldFound = false;
     Boolean goldAligned = false;
     int wait = 0;
     boolean set  = false;
-    double s1, s2;
-int realDist, lastDist;
-    private ElapsedTime vision = new ElapsedTime();
-    double transfer1, transfer2;
-
-
-
-
-
-
+    private ElapsedTime timeout = new ElapsedTime();
 
     public void Drop(){
         liftM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
         liftM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        clampL.setPosition(0);
         lock.setPosition(1);
-
-
-        sleep(500);
-
+        sleep(1000);
+        lock.setPosition(1);
+timeout.reset();
+while(liftM.getCurrentPosition() < 400 && timeout.milliseconds() < 2000){
+    liftM.setPower(1);
+}
         liftM.setPower(0.5);
-        sleep(2000);
-
-////        telemetry.addData("going into loop"," ");
-////        telemetry.update();
-////        sleep(1000);
-//
-//        while (opModeIsActive() && liftM.getCurrentPosition() < 1055) {
-//
-//            telemetry.addData("current pos", liftM.getCurrentPosition());
-//            telemetry.update();
-//        }
-////        telemetry.addData("exited loop"," ");
-////        telemetry.update();
-////        sleep(1000);
-
-//        liftM.setPower(0.2);
-
-    }
+        sleep(500);
+        liftM.setPower(0.2);
+        sleep(100);
+        }
 
     public  void  scoreMarker(){
-
-
 
         collectFlipperM.setPower(0.3);
         sleep(100);
@@ -94,9 +67,6 @@ int realDist, lastDist;
 
         collectSpinnerM.setPower(0);
         collectFlipperM.setPower(0);
-
-
-
 
     }
 
@@ -113,7 +83,7 @@ int realDist, lastDist;
         lb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         //Run the loop as long as all of the wheels are at a position less than their target position
         //55 encoder ticks per inch, so convert the inch input to encoder ticks
-        while(distance*55 > rf.getCurrentPosition() && -distance*55 < lf.getCurrentPosition() && distance*55 > rb.getCurrentPosition() && -distance*55 < lb.getCurrentPosition()) {
+        while(distance*55 > rf.getCurrentPosition() && -distance*55 < lf.getCurrentPosition() && distance*55 > rb.getCurrentPosition() && -distance*55 < lb.getCurrentPosition() &&!isStopRequested()) {
             //intake gyro values for drift correction
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
             //calculate speed based off of the values given
@@ -156,38 +126,7 @@ int realDist, lastDist;
         rb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lf.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        while(-distance*55 < rf.getCurrentPosition() && distance*55 > lf.getCurrentPosition() && -distance*55 < rb.getCurrentPosition() && distance*55 > lb.getCurrentPosition()) {
-
-            angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
-
-            //0, -0.5 is to drive forward
-            //-0.5, 0
-            speed = Math.hypot(x, y);
-            angle = Math.atan2(y, x) + Math.PI / 4;
-            angle = angle + angles.firstAngle;
-            rightX = 0;
-
-            lf.setPower((speed * (Math.sin(angle)) + rightX));
-            rf.setPower(-(speed * (Math.cos(angle))) - rightX);
-            lb.setPower((speed * (Math.cos(angle)) + rightX));
-            rb.setPower(-(speed * (Math.sin(angle))) - rightX);
-
-            telemetry.addData("current pos",rf.getCurrentPosition());
-            telemetry.addData("current pos",rb.getCurrentPosition());
-            telemetry.addData("current pos",lf.getCurrentPosition());
-            telemetry.addData("current pos",lb.getCurrentPosition());
-            telemetry.update();
-        }
-        rf.setPower(-0);
-        lf.setPower(-0);
-        rb.setPower(0);
-        lb.setPower(0);
-
-    }
-
-    public void encoderDriveBack(int distance, double x, double y){
-
-        while(-distance*55 > rf.getCurrentPosition() && distance*55 < lf.getCurrentPosition() && -distance*55 > rb.getCurrentPosition() && distance*55 < lb.getCurrentPosition()) {
+        while(-distance*55 < rf.getCurrentPosition() && distance*55 > lf.getCurrentPosition() && -distance*55 < rb.getCurrentPosition() && distance*55 > lb.getCurrentPosition()&&!isStopRequested()) {
 
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
 
@@ -224,18 +163,18 @@ int realDist, lastDist;
         targetHeading += targetHeading > 360 ? -360 :
                 targetHeading <   0 ?  360 : 0;
 
-        while (Math.abs(degreesToTurn) > 2) {
+        while (Math.abs(degreesToTurn) > 2&&!isStopRequested()) {
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             currentHeading = -angles.firstAngle + 180;
             degreesToTurn = targetHeading - currentHeading;
 
             double power = Range.clip(Math.signum(degreesToTurn) * (0.25 + (Math.abs(degreesToTurn) / 360)), -1, 1);
-//            op.telemetry.addData("DegreesToTurn", degreesToTurn);
-//            op.telemetry.addData("currentHeading", currentHeading);
-//            op.telemetry.addData("targetHeading", targetHeading);
-//            op.telemetry.addData("POWA", power);
-//            System.out.println("DegreesToTurn: " + degreesToTurn + " -- currentHeading: " + currentHeading + " -- POWA: " + power);
-//            op.telemetry.update();
+            //telemetry.addData("DegreesToTurn", degreesToTurn);
+            //telemetry.addData("currentHeading", currentHeading);
+            //telemetry.addData("targetHeading", targetHeading);
+            //telemetry.addData("POWA", power);
+            //System.out.println("DegreesToTurn: " + degreesToTurn + " -- currentHeading: " + currentHeading + " -- POWA: " + power);
+            //telemetry.update();
             rf.setPower(power);
             rb.setPower(power);
             lf.setPower(power);
@@ -270,14 +209,13 @@ int realDist, lastDist;
             }
 
         }
-        sleep(1000);
+
         if (side) {
             telemetry.addData("Press B ", "for two block");
             telemetry.addData("Press X ", "for one");
+
             telemetry.update();
             while (!opModeIsActive() && !gamepad1.a) {
-
-
 
                 if (gamepad1.b) {
                     telemetry.addData("Two ", "block");
@@ -291,19 +229,14 @@ int realDist, lastDist;
 
                     telemetry.update();
                 }
-
             }
-
-
-
         }
         else if(!side){
             telemetry.addData("Press B ", "for marker");
             telemetry.addData("Press X ", "for no marker");
+            telemetry.addData("Press Right bumper ", "for follow");
             telemetry.update();
             while (!opModeIsActive() && !gamepad1.a) {
-
-
 
                 if (gamepad1.b) {
                     telemetry.addData("Yes ", "marker");
@@ -317,10 +250,15 @@ int realDist, lastDist;
 
                     telemetry.update();
                 }
+                else if (gamepad1.right_bumper) {
+                    telemetry.addData("Follow ", "partner");
+                    telemetry.addData("press A to ", "move on");
+                    two = false;
+                    follow = true;
 
+                    telemetry.update();
+                }
             }
-
-
         }
 
         telemetry.addData("Press ","Dpad up for more wait");
@@ -331,25 +269,21 @@ int realDist, lastDist;
            wait = wait + 1000;
            sleep(300);
        }
-
        else if (gamepad1.dpad_down){
            wait = wait - 1000;
            sleep(300);
            if(wait < 0){
                wait = 0;
            }
-
        }
-
             telemetry.addData("Waiting for:", wait);
             telemetry.update();
-
         }
     }
 
     public  void toBlockTwo(){
 if (pos == 0){
-    imuTurn(-25);
+    imuTurn(-30);
     encoderDriveForward(36, 0.5, 0.5);
     imuTurn(70);
     encoderDriveForward(20, -0.5, 0.5);
@@ -364,23 +298,16 @@ if (pos == 0){
 
     encoderDriveForward(30, -0.5, -0.5);
 
-
-
-
-
-
 }
 
 else if (pos == 1){
-encoderDriveForward(46, 0, 0.5);
+encoderDriveForward(54, 0, 0.5);
     imuTurn(-45);
 
-    encoderDriveForward(36, -0.5, 0.5);
+    encoderDriveForward(30, -0.5, 0.5);
     encoderDriveRight(6, 0.5, -0.5);
 
     scoreMarker();
-
-
 
     encoderDriveForward(45, -0.5, -0.5);
 
@@ -388,7 +315,7 @@ encoderDriveForward(46, 0, 0.5);
 
     imuTurn(40);
 
-    encoderDriveRight(22, 0, -0.5);
+    encoderDriveRight(30, 0, -0.5);
 
     imuTurn(-55);
 
@@ -403,7 +330,6 @@ else if(pos == 2){
     encoderDriveForward(10, -0.5, 0.5);
 
     encoderDriveRight(7, 0.5, -0.5);
-
 
     encoderDriveForward(20, 0.5, 0.5);
 
@@ -432,7 +358,7 @@ sleep(1000);
 
     public  void toBlockPark(){
         if (pos == 0){
-            imuTurn(-25);
+            imuTurn(-30);
             encoderDriveForward(36, 0.5, 0.5);
             imuTurn(70);
             encoderDriveForward(20, -0.5, 0.5);
@@ -443,48 +369,20 @@ sleep(1000);
             scoreMarker();
             encoderDriveForward(70, -0.5, -0.5);
 
-
-
-
-
-
-
-
         }
         else if (pos == 1){
 
-            encoderDriveForward(46, 0, 0.5);
+            encoderDriveForward(54, 0, 0.5);
             imuTurn(-45);
 
-            encoderDriveForward(36, -0.5, 0.5);
+            encoderDriveForward(30, -0.5, 0.5);
             encoderDriveRight(6, 0.5, -0.5);
 
             scoreMarker();
 
-//            encoderDriveForward(24, -0.5, 0.5);
-//            encoderDriveRight(7, 0.5, -0.5);
 
             encoderDriveForward(72, -0.5, -0.5);
-
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            imuTurn(45);
-//
-//            encoderDriveRight(25, 0, -0.5);
-//
-//            imuTurn(-55);
-//
-//            encoderDriveForward(20, -0.5, -0.5);
-
-
-
-
-
-
-
-
-
-        }
+ }
 
         else if(pos == 2){
             imuTurn(30);
@@ -501,21 +399,7 @@ sleep(1000);
             scoreMarker();
 
             encoderDriveForward(70, -0.5, -0.5);
-
-
-//            encoderDriveForward(45, -0.5, -0.5);
-//
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            imuTurn(45);
-//
-//            encoderDriveRight(44, 0, -0.5);
-//
-//            imuTurn(-55);
-//
-//            encoderDriveForward(20, -0.5, -0.5);
-
-        }
+}
         dumpS.setPosition(1);
         sleep(1000);
 
@@ -526,281 +410,137 @@ sleep(1000);
 
     public  void toBlockCraterPark(){
         if (pos == 0){
-            imuTurn(-30);
+            imuTurn(-50);
             encoderDriveForward(38, 0.5, 0.5);
-//            imuTurn(70);
-//            encoderDriveForward(20, -0.5, 0.5);
-//            imuTurn(-90);
-//            encoderDriveForward(24, -0.5, 0.5);
-//
-//            encoderDriveForward(10, -0.5, -0.5);
-//            scoreMarker();
-//            encoderDriveForward(45, -0.5, -0.5);
-//
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            encoderDriveForward(30, -0.5, -0.5);
-
-
-
-
-
-
-        }
+ }
 
         else if (pos == 1){
             imuTurn(-10);
             encoderDriveForward(46, 0, 0.5);
-//            scoreMarker();
-//            imuTurn(-45);
-//
-//            encoderDriveForward(22, -0.5, 0.5);
-//
-//            encoderDriveForward(45, -0.5, -0.5);
-//
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            imuTurn(45);
-//
-//            encoderDriveRight(25, 0, -0.5);
-//
-//            imuTurn(-55);
-//
-//            encoderDriveForward(20, -0.5, -0.5);
-
-
-
-
-
-
-
-
-
-        }
+}
 
         else if(pos == 2){
             imuTurn(25);
             encoderDriveForward(50, -0.5, 0.5);
-//            imuTurn(-75);
-//            encoderDriveForward(6, -0.5, 0.5);
-//
-//            encoderDriveForward(20, 0.5, 0.5);
-//
-//            scoreMarker();
-//
-//            encoderDriveForward(45, -0.5, -0.5);
-//
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            imuTurn(45);
-//
-//            encoderDriveRight(44, 0, -0.5);
-//
-//            imuTurn(-55);
-//
-//            encoderDriveForward(20, -0.5, -0.5);
-
-        }
+}
         dumpS.setPosition(1);
         sleep(1000);
-
-
-
 
     }
 
     public  void toBlockCraterMarker(){
 
-        encoderDriveForward(15, 0, 0.5);
+        encoderDriveForward(13, 0, 0.5);
         imuTurn(-90);
-        encoderDriveForward(40, 0.5, 0);
+        encoderDriveForward(48, 1, 0);
         imuTurn(-45);
-        encoderDriveForward(26, 0.5, 0.5);
+        encoderDriveForward(20, 0.5, 0.5);
 
         encoderDriveRight(6, -0.5, -0.5);
 
         sleep(500);
-        encoderDriveForward(44, 0.5, -0.5);
+        encoderDriveForward(44, 0.8, -0.8);
 
         scoreMarker();
 
-        encoderDriveForward(44, -0.5, 0.5);
+        encoderDriveForward(44, -0.8, 0.8);
 
         imuTurn(55);
 
-
-//        encoderDriveForward(8, 0.5, 0.5);
-//        sleep(1000);
-//        encoderDriveForward(8, 0.5, -0.5);
-//        sleep(1000);
-//        encoderDriveForward(8, -0.5, 0.5);
-//        sleep(1000);
-//        encoderDriveForward(8, -0.5, -0.5);
-
-
-
-
-
         if (pos == 0){
             encoderDriveForward(17, -0.5, 0);
-//            encoderDriveForward(20, -0.5, 0.5);
-//            imuTurn(-90);
-//            encoderDriveForward(24, -0.5, 0.5);
-//
-//            encoderDriveForward(10, -0.5, -0.5);
-//            scoreMarker();
-//            encoderDriveForward(45, -0.5, -0.5);
-//
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            encoderDriveForward(30, -0.5, -0.5);
-
-
-
-
-
 
         }
 
         else if (pos == 1){
             encoderDriveForward(42, -0.5, 0);
-
-//            scoreMarker();
-//            imuTurn(-45);
-//
-//            encoderDriveForward(22, -0.5, 0.5);
-//
-//            encoderDriveForward(45, -0.5, -0.5);
-//
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            imuTurn(45);
-//
-//            encoderDriveRight(25, 0, -0.5);
-//
-//            imuTurn(-55);
-//
-//            encoderDriveForward(20, -0.5, -0.5);
-
-
-
-
-
-
-
-
-
-        }
+}
 
         else if(pos == 2){
             encoderDriveForward(58, -0.5, 0);
-//            imuTurn(-75);
-//            encoderDriveForward(6, -0.5, 0.5);
-//
-//            encoderDriveForward(20, 0.5, 0.5);
-//
-//            scoreMarker();
-//
-//            encoderDriveForward(45, -0.5, -0.5);
-//
-//            encoderDriveRight(16, 0.5, -0.5);
-//
-//            imuTurn(45);
-//
-//            encoderDriveRight(44, 0, -0.5);
-//
-//            imuTurn(-55);
-//
-//            encoderDriveForward(20, -0.5, -0.5);
-
-        }
+}
 
         imuTurn(-85);
         encoderDriveForward(23, 0, 0.5);
         dumpS.setPosition(1);
         sleep(1000);
-
-
-
-
-    }
+}
 
     public void followPartner(){
 
         if (pos == 0){
-            imuTurn(-30);
-            encoderDriveForward(38, 0.5, 0.5);
+            imuTurn(-50);
+            encoderDriveForward(28, 0.5, 0.5);
+            sleep(100);
+            encoderDriveRight(8, -0.5, -0.5);
+            imuTurn(-45);
 
-            encoderDriveRight(38, -0.5, -0.5);
-            imuTurn(30);
+            encoderDriveForward(26, 0.5, 0);
 
         }
 
         else if (pos == 1){
             imuTurn(-10);
-            encoderDriveForward(46, 0, 0.5);
-
-            encoderDriveRight(46, 0, -0.5);
-            imuTurn(10);
+            encoderDriveForward(28, 0, 0.5);
+            sleep(100);
+            encoderDriveRight(8, 0, -0.5);
+            imuTurn(-80);
+            encoderDriveForward(34, 0.5, 0);
 
         }
 
         else if(pos == 2){
             imuTurn(25);
-            encoderDriveForward(50, -0.5, 0.5);
-
-            encoderDriveRight(50, 0.5, -0.5);
-            imuTurn(-25);
-
-        }
+            encoderDriveForward(32, -0.5, 0.5);
+                sleep(100);
+            encoderDriveRight(6, 0.5, -0.5);
+            imuTurn(-115);
+            encoderDriveForward(44, 0.5, 0);
+            }
         imuTurn(-90);
-        encoderDriveForward(40, 0.5, 0);
-        imuTurn(-90);
-        encoderDriveRight(20, 0, -0.5);
+        encoderDriveRight(38, 0, -0.5);
         imuTurn(90);
 
         if (pos == 0){
+            encoderDriveRight(6, -0.5, 0);
+
             imuTurn(-25);
-            encoderDriveForward(36, 0.5, 0.5);
+            encoderDriveForward(44, 0.5, 0);
             imuTurn(70);
-            encoderDriveForward(20, -0.5, 0.5);
+            encoderDriveForward(20, 0, 0.5);
 
             scoreMarker();
 
         }
 
         else if (pos == 1){
-            encoderDriveForward(46, 0, 0.5);
-            imuTurn(45);
+            encoderDriveForward(40, 0.5, 0);
 
             scoreMarker();
 
             }
 
         else if(pos == 2){
+            encoderDriveRight(8, -0.5, 0);
+
             imuTurn(30);
-            encoderDriveForward(47, -0.5, 0.5);
-            imuTurn(-75);
-            encoderDriveForward(10, -0.5, 0.5);
-
-            encoderDriveRight(7, 0.5, -0.5);
-
-
+            encoderDriveForward(40, 0.5, 0);
+            imuTurn(-80);
             encoderDriveForward(20, 0.5, 0.5);
 
-            scoreMarker();
+            encoderDriveRight(10, -0.5, -0.5);
 
-        }
+            encoderDriveRight(24, 0.5, -0.5);
+
+            scoreMarker();
+    }
 
 
     }
 
-
-
-
     @Override
     public void runOpMode() {
-pos = 0;
+        pos = 0;
 
         telemetry.addData("Status", "DogeCV 2018.0 - Gold Align Example");
 
@@ -810,8 +550,8 @@ pos = 0;
         detector.useDefaults(); // Set detector to use default settings
 
         // Optional tuning
-        detector.alignSize = 100; // How wide (in pixels) is the range in which the gold object will be aligned. (Represented by green bars in the preview)
-        detector.alignPosOffset = 200; // How far from center frame to offset this alignment zone.
+        detector.alignSize = 150; // How wide (in pixels) is the range in which the gold object will be aligned. (Represented by green bars in the preview)
+        detector.alignPosOffset = 250; // How far from center frame to offset this alignment zone.
         detector.downscale = 0.4; // How much to downscale the input frames
 
         detector.areaScoringMethod = DogeCV.AreaScoringMethod.MAX_AREA; // Can also be PERFECT_AREA
@@ -820,7 +560,6 @@ pos = 0;
 
         detector.ratioScorer.weight = 5; //
         detector.ratioScorer.perfectRatio = 1.0; // Ratio adjustment
-
 
 
         rb = hardwareMap.dcMotor.get("rb");
@@ -854,12 +593,15 @@ pos = 0;
         collectSpinnerM = hardwareMap.dcMotor.get("collectSpinnerM");
         collectSpinnerM.setPower(0);
         collectSpinnerM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
+        clampR = hardwareMap.servo.get("clampR");
+        clampL = hardwareMap.servo.get("clampL");
+//        clampL.setPosition(1);
+//        clampR.setPosition(1);
         dumpS = hardwareMap.servo.get("dumpS");
         dumpS.setPosition(0);
 
         lock = hardwareMap.servo.get("lock");
-       lock.setPosition(0);
+        //lock.setPosition(1);
 
         BNO055IMU.Parameters parameters_IMU = new BNO055IMU.Parameters();
         parameters_IMU.angleUnit = BNO055IMU.AngleUnit.RADIANS;
@@ -880,125 +622,96 @@ pos = 0;
         rb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lf.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        clampR.setPosition(0.5);
+        clampL.setPosition(1);
+        lock.setPosition(0);
         sleep(50);
 
         goldAligned = detector.getAligned();
         goldFound = detector.isFound();
 
-        //gyroHeadingStorage.setHeading(angles.firstAngle);
 
-        //s1 = angles.firstAngle;
+            selection();
 
-
-        selection();
-
-        waitForStart();
-
-        //s2 = angles.firstAngle;
-
-
-        //gyroHeadingStorage.setHeading2(angles.firstAngle);
-
-        detector.enable(); // Start the detector!
-
-
-sleep(2000);
-        goldAligned = detector.getAligned();
-        goldFound = detector.isFound();
-
-
-//
-//        //used to be 180
-//        //If the mineral is inside of a 153 pixel range on the left side of the screen
-//        if (detector.getYPosition() > 247 && detector.getYPosition() < 400) {
-//        pos = 1; //Position 1 is center
-//        telemetry.addData("Y Pos" , detector.getYPosition()); //Print Gold Y position.
-//        telemetry.update();
-//
-//    }//If the mineral is inside of a 193 pixel range on the right side on the screen
-//    else if (detector.getYPosition() < 247  && detector.getYPosition() > 50) {
-//        pos = 2;
-//        telemetry.addData("Y Pos" , detector.getYPosition()); //Print Gold Y position.
-//        telemetry.update();
-//    }//If the mineral is off the screen
-//    else if (detector.getYPosition() == 0) {
-//        pos = 0; //Position 0 is left, where we cannot see the mineral
-//        telemetry.addData("Y Pos" , detector.getYPosition()); //Print Gold Y position.
-//        telemetry.update();
-//
-//    }
-//    else pos = 1; //If something messes up, default to center position
+            waitForStart();
+while(opModeIsActive()){
 
 
 
-        detector.disable();
+            detector.enable(); // Start the detector!
 
 
-        if (goldFound) { // gold is center or right
-            if (goldAligned) { // gold is right
-                goldPosition = "right";
-                pos = 2;
+            sleep(2000);
+            goldAligned = detector.getAligned();
+            goldFound = detector.isFound();
+
+            detector.disable();
+
+
+            if (goldFound) { // gold is center or right
+                if (goldAligned) { // gold is right
+                    goldPosition = "right";
+                    pos = 2;
+                } else { // gold is center
+                    goldPosition = "center";
+                    pos = 1;
+                }
+            } else { // gold is left
+                goldPosition = "left";
+                pos = 0;
             }
-            else { // gold is center
-                goldPosition = "center";
-                pos = 1;
+            telemetry.addData("Gold Position: ", "" + goldPosition);
+            //telemetry.update();
+
+
+            telemetry.addData("pos:", pos);
+            telemetry.update();
+
+
+            Drop();
+            sleep(wait);
+            encoderDriveForward(5, 0, -0.5);
+
+            encoderDriveForward(1, 0, 0.5);
+
+
+    encoderDriveForward(12, -0.8, 0);
+
+            liftM.setPower(0);
+            sleep(100);
+    encoderDriveRight(4, 0.8, 0);
+
+
+
+    if (side) {
+
+                if (two) {
+                    toBlockTwo();
+                    sleep(30000);
+                } else if (!two) {
+                    toBlockPark();
+                    sleep(30000);
+                }
+
             }
+            else if (!side) {
+                if (follow) {
+                    followPartner();
+                    sleep(30000);
+                } else if (!follow) {
+                    if (marker) {
+                        toBlockCraterMarker();
+                        sleep(30000);
+                    } else if (!marker) {
+                        toBlockCraterPark();
+                        sleep(30000);
+
+                    }
+                }
+            }
+
+
         }
-        else { // gold is left
-            goldPosition = "left";
-            pos = 0;
-        }
-        telemetry.addData("Gold Position: ", "" + goldPosition);
-        //telemetry.update();
-
-
-        telemetry.addData("pos:", pos);
-        telemetry.update();
-
-
-
-
-//pos = 0;
-
-
-//
-//        encoderDriveForward(2, 0, 0.5);
-//
-//
-//        encoderDriveRight(13, 0.5, 0);
-//
-//        liftM.setPower(0);
-//
-sleep(wait);
-
-
-
-        if(side) {
-            if(two) {
-                toBlockTwo();
-            }
-            else if (!two){
-                toBlockPark();
-            }
-        }
-
-        else if(!side) {
-            if(marker) {
-                toBlockCraterMarker();
-            }
-            else if(!marker){
-                toBlockCraterPark();
-
-            }
-        }
-
-
-
     }
-
-
-
-
-
 
 }

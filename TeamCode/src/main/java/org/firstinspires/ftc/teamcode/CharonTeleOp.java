@@ -14,20 +14,19 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-@TeleOp(name="Cheerios Teleop", group="OpMode")
+@TeleOp(name="Charon Teleop", group="OpMode")
 public class CharonTeleOp extends OpMode {
 
     public DcMotor lf, rf, lb, rb;
+    Servo clampR, clampL;
     double rightX;
     double angle;
     double angleTest[] = new double[10];
     int count = 0;
     double sum;
-    double rA;
     double speed;
-    int target, tar;
+    int target;
     Orientation angles;
-    double lets;
     private BNO055IMU imu;
     DcMotor liftM;
     DcMotor extendM;
@@ -36,21 +35,15 @@ public class CharonTeleOp extends OpMode {
     Servo dumpS, lock;
     private ColorSensor color;
     boolean first = true;
-    int x = 4;
-    int y = 1;
-    int z = -1;
-    int a = 0;
     int q = -1;
     int p = 1;
     private int redMargin = 160;
     double correct;
     boolean trys = false;
-    int base;
     private ElapsedTime dumping = new ElapsedTime();
     private ElapsedTime buttoning = new ElapsedTime();
     private ElapsedTime popOFF = new ElapsedTime();
     private ElapsedTime revThat = new ElapsedTime();
-    private ElapsedTime dropLift = new ElapsedTime();
 
 
     private enum LiftStage {
@@ -99,6 +92,8 @@ public class CharonTeleOp extends OpMode {
         liftM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         liftM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         color = hardwareMap.get(ColorSensor.class, "color");
+        clampR = hardwareMap.servo.get("clampR");
+        clampL = hardwareMap.servo.get("clampL");
 
         telemetry.addData("", "Successfully Initialized!");
 
@@ -111,24 +106,21 @@ public class CharonTeleOp extends OpMode {
     @Override
     public void loop() {
         // OPERATOR
-
         extendM.setPower(gamepad2.right_stick_y);
         collectSpinnerM.setPower(q*gamepad2.right_trigger + p*gamepad2.left_trigger);
 
-        if     (gamepad2.dpad_down)   collectFlipperM.setPower(q*0.6);
-        else if(gamepad2.dpad_up) collectFlipperM.setPower(p*0.6);
+        if     (gamepad2.dpad_down)   collectFlipperM.setPower(q*0.7);
+        else if(gamepad2.dpad_up) collectFlipperM.setPower(p*0.7);
         else collectFlipperM.setPower(0);
 
         if(gamepad2.right_bumper || gamepad1.right_bumper){
             dumpS.setPosition(1);
-            revThat.reset();
-            dumping.reset();
         }
         else {
             dumpS.setPosition(0);
         }
 
-        if(dumping.milliseconds() < 100 || gamepad2.left_bumper){
+        if(gamepad2.left_bumper){
             liftM.setPower(0.2);
         }
 
@@ -167,7 +159,7 @@ public class CharonTeleOp extends OpMode {
                         buttoning.reset();
                     }
                     else {
-                        liftM.setPower(0.2);
+                        liftM.setPower(0.25);
                     }
                     if(first){
                         first = false;
@@ -183,40 +175,20 @@ public class CharonTeleOp extends OpMode {
                 liftM.setPower(-0.1);
             }
         }
-//        if(gamepad2.y && buttoning.milliseconds() > 300){
-//            target = target + 50;
-//            buttoning.reset();
-//        }
-//        else  if(gamepad2.a && buttoning.milliseconds() > 300){
-//            target = target - 50;
-//buttoning.reset();
-//        }
-        if(gamepad1.b){
-            x = 4;
-
-        }
-        else if (gamepad1.x){
-            x = 2;
-        }
 
         if(gamepad1.right_bumper){
-            y = 1;
+            clampR.setPosition(0.5);
+            clampL.setPosition(1);
+            lock.setPosition(0);
         }
-
-        else if(gamepad1.left_bumper){
-            y = -1;
+        if(gamepad1.left_bumper){
+            clampL.setPosition(0);
+            lock.setPosition(1);
         }
-        if (gamepad1.left_trigger > 0.5){
-            z = -1;
-        }
-        else if (gamepad1.right_trigger > 0.5){
-            z = 1;
-        }
-        if(gamepad1.dpad_up){
-            a = 1;
-        }
-        else if(gamepad1.dpad_down){
-            a = 0;
+        if(gamepad1.x){
+            clampR.setPosition(1);
+            clampL.setPosition(0);
+            lock.setPosition(1);
         }
 
 
@@ -234,9 +206,9 @@ public class CharonTeleOp extends OpMode {
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
 
         speed = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-        angle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) + (Math.PI / x)*y;
+        angle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) + (Math.PI/4);
         angle = angle; //+ (angles.firstAngle*a);
-        rightX = gamepad1.right_stick_x*z;
+        rightX = gamepad1.right_stick_x;
 
         if(rightX == 0){
             if (count < 10) {
@@ -254,32 +226,19 @@ public class CharonTeleOp extends OpMode {
                     angle = angle - correct;
                 }
                 count = 0;
-//                telemetry.addData("correct", correct);
-//
-//                telemetry.addData("angle", angle);
-//
-//                telemetry.addData("sum", sum);
-//
-//                telemetry.update();
 
             }
         }
 
+        lf.setPower(((speed * (Math.sin(angle)) + rightX)));
+        rf.setPower((-(speed * (Math.cos(angle))) + rightX));
+        lb.setPower(((speed * (Math.cos(angle)) + rightX)));
+        rb.setPower((-(speed * (Math.sin(angle))) + rightX));
+        telemetry.addData("buttoning", buttoning.milliseconds());
+        telemetry.addData("gp1", gamepad1.right_bumper);
+        telemetry.addData("gp2", gamepad2.right_bumper);
+        telemetry.update();
 
-        lf.setPower(z*(-(speed * (Math.sin(angle)) - rightX)));
-        rf.setPower(z*((speed * (Math.cos(angle))) + rightX));
-        lb.setPower(z*(-(speed * (Math.cos(angle)) - rightX)));
-        rb.setPower(z*((speed * (Math.sin(angle))) + rightX));
-        telemetry.addData("target", target);
-        telemetry.addData("currrent pos", liftM.getCurrentPosition());
-        telemetry.addData("first", first);
 
-
-
-//        telemetry.addData("lb pwoer", lb.getPower());
-//        telemetry.addData("rb pwoer", rb.getPower());
-//        telemetry.addData("rf pwoer", rf.getPower());
-//        telemetry.addData("lf pwoer", lf.getPower());
-//        telemetry.update();
     }
 }
