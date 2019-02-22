@@ -8,6 +8,8 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -24,7 +26,8 @@ public class CharonAutonomous extends LinearOpMode {
     DcMotor collectFlipperM, lb, rf, lf, rb, liftM, extendM, collectSpinnerM;
     private GoldAlignDetector detector;
     double angle;
-    Servo dumpS, lock, clampL, clampR;
+    Servo dumpS;
+    CRServo lock, clampL, clampR;
     private BNO055IMU imu;
     double speed;
     Orientation angles;
@@ -34,39 +37,115 @@ public class CharonAutonomous extends LinearOpMode {
     boolean follow = false;
     String goldPosition;
     Boolean goldFound = false;
+    int target;
+
     Boolean goldAligned = false;
     int wait = 0;
-    boolean set  = false;
-    private ElapsedTime timeout = new ElapsedTime();
+    boolean first = true;
+    private ElapsedTime buttoning = new ElapsedTime();
 
+
+    private int redMargin = 160;
+
+    boolean set  = false;
+        private ColorSensor color;
+
+    private ElapsedTime timeout = new ElapsedTime();
+    private enum LiftStage {
+        IDLE, LIFTING, SLOWING, STOP
+    }
+    private LiftStage currentStage = LiftStage.IDLE;
+
+    public void avoidPartner(){
+        if (pos == 0){
+            imuTurn(-40);
+            encoderDriveForward(53, 0, 0.5);
+            imuTurn(80);
+            encoderDriveRight(20, -0.5, 0.5);
+            encoderDriveRight(20, 0.5, 0.5);
+            scoreMarker();
+            dumpS.setPosition(1);
+
+            encoderDriveForward(75, 0.5, -0.5);
+        } else if (pos == 1){
+            imuTurn(-10);
+            encoderDriveForward(56, 0, 0.5);
+            imuTurn(50);
+            encoderDriveRight(24, 0.5, 0.5);
+            scoreMarker();
+            dumpS.setPosition(1);
+
+            encoderDriveForward(75, 0.5, -0.5);
+        } else if(pos == 2){
+            imuTurn(20);
+            encoderDriveForward(40, 0, 0.5);
+            imuTurn(25);
+            encoderDriveRight(66, 0.7, 0.7);
+            encoderDriveForward(5, 0.5, -0.5);
+            scoreMarker();
+            dumpS.setPosition(1);
+
+            encoderDriveRight(85, 0.5, -0.5);
+        }
+        dumpS.setPosition(1);
+        sleep(1000);
+    }
     public void Drop(){
         liftM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         liftM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        clampL.setPosition(0);
-        lock.setPosition(1);
-        sleep(1000);
-        lock.setPosition(1);
-timeout.reset();
-while(liftM.getCurrentPosition() < 400 && timeout.milliseconds() < 2000){
-    liftM.setPower(1);
-}
-        liftM.setPower(0.5);
+        lock.setPower(1);
+        sleep(300);
+        clampL.setPower(-1);
         sleep(500);
-        liftM.setPower(0.2);
+        clampL.setPower(0);
+        lock.setPower(0);
+        sleep(600);
+        clampR.setPower(1);
+//while(liftM.getCurrentPosition() < 410 && timeout.milliseconds() < 2000){
+//    if(timeout.milliseconds() > 300){
+//        clampR.setPower(0);
+//    }
+//    liftM.setPower(1);
+//}
+        timeout.reset();
+
+//        while (timeout.milliseconds() < 2000){
+//            //if below the threshold, go up
+//            if(color.red() < redMargin) liftM.setPower(-0.9);
+//            //if above the threshold, fall down
+//            else if (color.red() < redMargin)
+//                if (color.red() > redMargin) liftM.setPower(0.1);
+//            //if at the threshold, stay stationary
+//                else
+//                    liftM.setPower(-0.25);
+//
+//        }
+
+        while(timeout.milliseconds() < 2000 && color.red() < redMargin && !isStopRequested()){
+            liftM.setPower(-0.8);
+        }
+
+        liftM.setPower(-0.1);
+
+//        liftM.setPower(0.5);
+//        sleep(500);
+        liftM.setPower(-0.25);
         sleep(100);
         }
 
     public  void  scoreMarker(){
 
-        collectFlipperM.setPower(0.3);
+        collectFlipperM.setPower(-0.3);
         sleep(100);
 
-        collectSpinnerM.setPower(1);
+        collectSpinnerM.setPower(-1);
 
        sleep(1000);
 
         collectSpinnerM.setPower(0);
         collectFlipperM.setPower(0);
+        dumpS.setPosition(1);
+
 
     }
 
@@ -213,6 +292,8 @@ while(liftM.getCurrentPosition() < 400 && timeout.milliseconds() < 2000){
         if (side) {
             telemetry.addData("Press B ", "for two block");
             telemetry.addData("Press X ", "for one");
+            telemetry.addData("Press Right bumper ", "for opposite");
+
 
             telemetry.update();
             while (!opModeIsActive() && !gamepad1.a) {
@@ -227,6 +308,13 @@ while(liftM.getCurrentPosition() < 400 && timeout.milliseconds() < 2000){
                     telemetry.addData("press A to ", "move on");
                     two = false;
 
+                    telemetry.update();
+                }
+                else if (gamepad1.right_bumper) {
+                    telemetry.addData("Follow ", "partner");
+                    telemetry.addData("press A to ", "move on");
+                    two = false;
+                    follow = true;
                     telemetry.update();
                 }
             }
@@ -358,9 +446,9 @@ sleep(1000);
 
     public  void toBlockPark(){
         if (pos == 0){
-            imuTurn(-30);
-            encoderDriveForward(36, 0.5, 0.5);
-            imuTurn(70);
+            imuTurn(-40);
+            encoderDriveForward(38, 0.5, 0.5);
+            imuTurn(80);
             encoderDriveForward(20, -0.5, 0.5);
             imuTurn(-90);
             encoderDriveForward(30, -0.5, 0.5);
@@ -371,9 +459,9 @@ sleep(1000);
 
         }
         else if (pos == 1){
-
+imuTurn(-15);
             encoderDriveForward(54, 0, 0.5);
-            imuTurn(-45);
+            imuTurn(-35);
 
             encoderDriveForward(30, -0.5, 0.5);
             encoderDriveRight(6, 0.5, -0.5);
@@ -385,9 +473,9 @@ sleep(1000);
  }
 
         else if(pos == 2){
-            imuTurn(30);
+            imuTurn(20);
             encoderDriveForward(47, -0.5, 0.5);
-            imuTurn(-75);
+            imuTurn(-65);
             encoderDriveForward(10, -0.5, 0.5);
 
             encoderDriveRight(7, 0.5, -0.5);
@@ -430,20 +518,20 @@ sleep(1000);
 
     public  void toBlockCraterMarker(){
 
-        encoderDriveForward(13, 0, 0.5);
+        encoderDriveForward(12, 0, 0.5);
         imuTurn(-90);
         encoderDriveForward(48, 1, 0);
         imuTurn(-45);
-        encoderDriveForward(20, 0.5, 0.5);
+        encoderDriveForward(12, 0.5, 0.5);
 
         encoderDriveRight(6, -0.5, -0.5);
 
         sleep(500);
-        encoderDriveForward(44, 0.8, -0.8);
+        encoderDriveForward(42, 0.8, -0.8);
 
         scoreMarker();
 
-        encoderDriveForward(44, -0.8, 0.8);
+        encoderDriveForward(40, -0.8, 0.8);
 
         imuTurn(55);
 
@@ -453,7 +541,7 @@ sleep(1000);
         }
 
         else if (pos == 1){
-            encoderDriveForward(42, -0.5, 0);
+            encoderDriveForward(40, -0.5, 0);
 }
 
         else if(pos == 2){
@@ -472,7 +560,7 @@ sleep(1000);
             imuTurn(-50);
             encoderDriveForward(28, 0.5, 0.5);
             sleep(100);
-            encoderDriveRight(8, -0.5, -0.5);
+            encoderDriveRight(6, -0.5, -0.5);
             imuTurn(-45);
 
             encoderDriveForward(26, 0.5, 0);
@@ -483,19 +571,19 @@ sleep(1000);
             imuTurn(-10);
             encoderDriveForward(28, 0, 0.5);
             sleep(100);
-            encoderDriveRight(8, 0, -0.5);
+            encoderDriveRight(11, 0, -0.5);
             imuTurn(-80);
-            encoderDriveForward(34, 0.5, 0);
+            encoderDriveForward(38, 0.5, 0);
 
         }
 
         else if(pos == 2){
-            imuTurn(25);
-            encoderDriveForward(32, -0.5, 0.5);
-                sleep(100);
-            encoderDriveRight(6, 0.5, -0.5);
+            imuTurn(20);
+            encoderDriveForward(28, -0.5, 0.5);
+                sleep(300);
+            encoderDriveRight(11, 0.5, -0.5);
             imuTurn(-115);
-            encoderDriveForward(44, 0.5, 0);
+            encoderDriveForward(50, 0.5, 0);
             }
         imuTurn(-90);
         encoderDriveRight(38, 0, -0.5);
@@ -528,9 +616,9 @@ sleep(1000);
             imuTurn(-80);
             encoderDriveForward(20, 0.5, 0.5);
 
-            encoderDriveRight(10, -0.5, -0.5);
+            encoderDriveRight(12, -0.5, -0.5);
 
-            encoderDriveRight(24, 0.5, -0.5);
+            encoderDriveRight(26, 0.5, -0.5);
 
             scoreMarker();
     }
@@ -578,6 +666,7 @@ sleep(1000);
         lf.setPower(0);
         lf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+
         collectFlipperM = hardwareMap.dcMotor.get("collectFlipperM");
         collectFlipperM.setPower(0);
         collectFlipperM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -593,14 +682,16 @@ sleep(1000);
         collectSpinnerM = hardwareMap.dcMotor.get("collectSpinnerM");
         collectSpinnerM.setPower(0);
         collectSpinnerM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        clampR = hardwareMap.servo.get("clampR");
-        clampL = hardwareMap.servo.get("clampL");
+        clampR = hardwareMap.crservo.get("clampR");
+        clampL = hardwareMap.crservo.get("clampL");
+        color = hardwareMap.get(ColorSensor.class, "color");
+
 //        clampL.setPosition(1);
 //        clampR.setPosition(1);
         dumpS = hardwareMap.servo.get("dumpS");
         dumpS.setPosition(0);
 
-        lock = hardwareMap.servo.get("lock");
+        lock = hardwareMap.crservo.get("lock");
         //lock.setPosition(1);
 
         BNO055IMU.Parameters parameters_IMU = new BNO055IMU.Parameters();
@@ -622,9 +713,9 @@ sleep(1000);
         rb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lf.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        clampR.setPosition(0.5);
-        clampL.setPosition(1);
-        lock.setPosition(0);
+        clampR.setPower(0);
+        clampL.setPower(0);
+        lock.setPower(0);
         sleep(50);
 
         goldAligned = detector.getAligned();
@@ -634,7 +725,7 @@ sleep(1000);
             selection();
 
             waitForStart();
-while(opModeIsActive()){
+
 
 
 
@@ -660,7 +751,8 @@ while(opModeIsActive()){
                 goldPosition = "left";
                 pos = 0;
             }
-            telemetry.addData("Gold Position: ", "" + goldPosition);
+
+    telemetry.addData("Gold Position: ", "" + goldPosition);
             //telemetry.update();
 
 
@@ -668,9 +760,22 @@ while(opModeIsActive()){
             telemetry.update();
 
 
+//    while (timeout.milliseconds() < 10000){
+//        //if below the threshold, go up
+//        telemetry.addData("color",color.red());
+//        telemetry.update();
+//        if(color.red() < redMargin) liftM.setPower(-0.8);
+//            //if above the threshold, fall down
+//        else if (color.red() > redMargin) liftM.setPower(0);
+//                //if at the threshold, stay stationary
+//        else liftM.setPower(-0.2);
+//
+//    }
             Drop();
             sleep(wait);
-            encoderDriveForward(5, 0, -0.5);
+    collectFlipperM.setPower(-0.5);
+
+    encoderDriveForward(5, 0, -0.5);
 
             encoderDriveForward(1, 0, 0.5);
 
@@ -680,31 +785,31 @@ while(opModeIsActive()){
             liftM.setPower(0);
             sleep(100);
     encoderDriveRight(4, 0.8, 0);
+    collectFlipperM.setPower(0);
+
 
 
 
     if (side) {
-
-                if (two) {
+                if(follow){
+                    avoidPartner();
+                }
+                else if (two) {
                     toBlockTwo();
-                    sleep(30000);
                 } else if (!two) {
                     toBlockPark();
-                    sleep(30000);
                 }
 
             }
             else if (!side) {
-                if (follow) {
+
+        if (follow) {
                     followPartner();
-                    sleep(30000);
                 } else if (!follow) {
                     if (marker) {
                         toBlockCraterMarker();
-                        sleep(30000);
                     } else if (!marker) {
                         toBlockCraterPark();
-                        sleep(30000);
 
                     }
                 }
@@ -714,4 +819,3 @@ while(opModeIsActive()){
         }
     }
 
-}

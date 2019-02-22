@@ -4,6 +4,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -18,7 +19,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 public class CharonTeleOp extends OpMode {
 
     public DcMotor lf, rf, lb, rb;
-    Servo clampR, clampL;
+    CRServo clampR, clampL, lock;
     double rightX;
     double angle;
     double angleTest[] = new double[10];
@@ -32,11 +33,11 @@ public class CharonTeleOp extends OpMode {
     DcMotor extendM;
     DcMotor collectFlipperM;
     DcMotor collectSpinnerM;
-    Servo dumpS, lock;
+    Servo dumpS;
     private ColorSensor color;
     boolean first = true;
-    int q = -1;
-    int p = 1;
+    int q = 1;
+    int p = -1;
     private int redMargin = 160;
     double correct;
     boolean trys = false;
@@ -73,9 +74,9 @@ public class CharonTeleOp extends OpMode {
         imu.initialize(parameters_IMU);
 
 
-        lock = hardwareMap.servo.get("lock");
-        lock.setPosition(0);
+        lock = hardwareMap.crservo.get("lock");
 
+lock.setPower(0);
         liftM = hardwareMap.dcMotor.get("liftM");
         liftM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
@@ -92,8 +93,8 @@ public class CharonTeleOp extends OpMode {
         liftM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         liftM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         color = hardwareMap.get(ColorSensor.class, "color");
-        clampR = hardwareMap.servo.get("clampR");
-        clampL = hardwareMap.servo.get("clampL");
+        clampR = hardwareMap.crservo.get("clampR");
+        clampL = hardwareMap.crservo.get("clampL");
 
         telemetry.addData("", "Successfully Initialized!");
 
@@ -109,8 +110,8 @@ public class CharonTeleOp extends OpMode {
         extendM.setPower(gamepad2.right_stick_y);
         collectSpinnerM.setPower(q*gamepad2.right_trigger + p*gamepad2.left_trigger);
 
-        if     (gamepad2.dpad_down)   collectFlipperM.setPower(q*0.7);
-        else if(gamepad2.dpad_up) collectFlipperM.setPower(p*0.7);
+        if     (gamepad2.dpad_down)   collectFlipperM.setPower(q*0.8);
+        else if(gamepad2.dpad_up) collectFlipperM.setPower(p*0.8);
         else collectFlipperM.setPower(0);
 
         if(gamepad2.right_bumper || gamepad1.right_bumper){
@@ -121,7 +122,7 @@ public class CharonTeleOp extends OpMode {
         }
 
         if(gamepad2.left_bumper){
-            liftM.setPower(0.2);
+            liftM.setPower(-0.2);
         }
 
         if (gamepad2.x && popOFF.milliseconds() > 300){
@@ -139,7 +140,7 @@ public class CharonTeleOp extends OpMode {
                     currentStage = LiftStage.LIFTING;
                     break;
                 case LIFTING:
-                    if(color.red() < redMargin) liftM.setPower(0.9);
+                    if(color.red() < redMargin) liftM.setPower(-0.9);
                     else currentStage = LiftStage.SLOWING;
                     break;
                 case SLOWING:
@@ -155,7 +156,7 @@ public class CharonTeleOp extends OpMode {
                         buttoning.reset();
                     }
                     else if (buttoning.milliseconds() > 200 && gamepad2.y){
-                        liftM.setPower(0.6);
+                        liftM.setPower(-0.6);
                         buttoning.reset();
                     }
                     else {
@@ -170,25 +171,35 @@ public class CharonTeleOp extends OpMode {
             }
         } else {
             currentStage = LiftStage.IDLE;
-            liftM.setPower(-gamepad2.left_stick_y);
-            if(gamepad2.left_stick_y == 0 && !gamepad1.right_bumper && !gamepad2.right_bumper && revThat.milliseconds() < 1000){
-                liftM.setPower(-0.1);
+            if(gamepad2.left_stick_y > 0.1 || gamepad2.left_stick_y < -0.1) {
+                liftM.setPower(gamepad2.left_stick_y);
+                revThat.reset();
+
             }
+            else if (gamepad2.left_stick_y == 0 && revThat.milliseconds() < 500){
+                liftM.setPower(0.4);
+            }
+            else {
+                liftM.setPower(gamepad2.left_stick_y);
+            }
+            telemetry.addData("revThat",revThat);
+            telemetry.update();
         }
 
         if(gamepad1.right_bumper){
-            clampR.setPosition(0.5);
-            clampL.setPosition(1);
-            lock.setPosition(0);
+            lock.setPower(1);
+            clampL.setPower(-1);
         }
         if(gamepad1.left_bumper){
-            clampL.setPosition(0);
-            lock.setPosition(1);
+            clampL.setPower(0);
+            lock.setPower(0);
+            clampR.setPower(0);
+
         }
         if(gamepad1.x){
-            clampR.setPosition(1);
-            clampL.setPosition(0);
-            lock.setPosition(1);
+            clampR.setPower(1);
+            clampL.setPower(1);
+            lock.setPower(1);
         }
 
 
@@ -197,7 +208,7 @@ public class CharonTeleOp extends OpMode {
             q = 1;
             revThat.reset();
         }
-        else if(gamepad1.y && revThat.milliseconds() < 300){
+        else if(gamepad1.y && revThat.milliseconds() < 1000){
             p = 1;
             q = -1;
             revThat.reset();
