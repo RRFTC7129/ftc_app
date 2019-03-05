@@ -42,7 +42,7 @@ public class CharonAutonomous extends LinearOpMode {
     Boolean goldAligned = false;
     int wait = 0;
     boolean first = true;
-    private ElapsedTime buttoning = new ElapsedTime();
+    private ElapsedTime drive = new ElapsedTime();
 
 
     private int redMargin = 160;
@@ -62,9 +62,9 @@ public class CharonAutonomous extends LinearOpMode {
             encoderDriveForward(53, 0, 0.5);
             imuTurn(80);
             encoderDriveRight(20, -0.5, 0.5);
-            encoderDriveRight(20, 0.5, 0.5);
             scoreMarker();
             dumpS.setPosition(1);
+            encoderDriveRight(8, 0.5, 0.5);
 
             encoderDriveForward(75, 0.5, -0.5);
         } else if (pos == 1){
@@ -74,8 +74,9 @@ public class CharonAutonomous extends LinearOpMode {
             encoderDriveRight(24, 0.5, 0.5);
             scoreMarker();
             dumpS.setPosition(1);
+            encoderDriveRight(8, 0.5, 0.5);
 
-            encoderDriveForward(75, 0.5, -0.5);
+            encoderDriveForward(80, 0.5, -0.5);
         } else if(pos == 2){
             imuTurn(20);
             encoderDriveForward(40, 0, 0.5);
@@ -84,6 +85,7 @@ public class CharonAutonomous extends LinearOpMode {
             encoderDriveForward(5, 0.5, -0.5);
             scoreMarker();
             dumpS.setPosition(1);
+            encoderDriveRight(8, 0.5, 0.5);
 
             encoderDriveRight(85, 0.5, -0.5);
         }
@@ -135,13 +137,15 @@ public class CharonAutonomous extends LinearOpMode {
 
     public  void  scoreMarker(){
 
-        collectFlipperM.setPower(-0.3);
-        sleep(100);
+        collectFlipperM.setPower(0.4);
+        sleep(400);
+        collectFlipperM.setPower(-0.4);
 
-        collectSpinnerM.setPower(-1);
+        collectSpinnerM.setPower(-0.5);
 
-       sleep(1000);
-
+        sleep(800);
+        collectFlipperM.setPower(-0.8);
+        sleep(800);
         collectSpinnerM.setPower(0);
         collectFlipperM.setPower(0);
         dumpS.setPosition(1);
@@ -233,6 +237,48 @@ public class CharonAutonomous extends LinearOpMode {
         lb.setPower(0);
 
     }
+
+    public void driveTime(double millisecond, double x, double y){
+        rf.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        lf.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rb.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        lb.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+
+
+        rf.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        lf.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        lb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        while(millisecond > drive.milliseconds() &&!isStopRequested()) {
+
+            angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
+
+            //0, -0.5 is to drive forward
+            //-0.5, 0
+            speed = Math.hypot(x, y);
+            angle = Math.atan2(y, x) + Math.PI / 4;
+            angle = angle + angles.firstAngle;
+            rightX = 0;
+
+            lf.setPower((speed * (Math.sin(angle)) + rightX));
+            rf.setPower(-(speed * (Math.cos(angle))) - rightX);
+            lb.setPower((speed * (Math.cos(angle)) + rightX));
+            rb.setPower(-(speed * (Math.sin(angle))) - rightX);
+
+            telemetry.addData("current pos",rf.getCurrentPosition());
+            telemetry.addData("current pos",rb.getCurrentPosition());
+            telemetry.addData("current pos",lf.getCurrentPosition());
+            telemetry.addData("current pos",lb.getCurrentPosition());
+            telemetry.update();
+        }
+        rf.setPower(-0);
+        lf.setPower(-0);
+        rb.setPower(0);
+        lb.setPower(0);
+
+    }
+
 
     public void imuTurn(double degreesToTurn) {
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
@@ -463,8 +509,8 @@ imuTurn(-15);
             encoderDriveForward(54, 0, 0.5);
             imuTurn(-35);
 
-            encoderDriveForward(30, -0.5, 0.5);
-            encoderDriveRight(6, 0.5, -0.5);
+            driveTime(5000, -0.5, 0.5);
+            driveTime(1000, 0.5, -0.5);
 
             scoreMarker();
 
@@ -476,9 +522,9 @@ imuTurn(-15);
             imuTurn(20);
             encoderDriveForward(47, -0.5, 0.5);
             imuTurn(-65);
-            encoderDriveForward(10, -0.5, 0.5);
+            driveTime(3000, -0.5, 0.5);
 
-            encoderDriveRight(7, 0.5, -0.5);
+            driveTime(7000, 0.5, -0.5);
 
 
             encoderDriveForward(20, 0.5, 0.5);
@@ -522,9 +568,9 @@ imuTurn(-15);
         imuTurn(-90);
         encoderDriveForward(48, 1, 0);
         imuTurn(-45);
-        encoderDriveForward(12, 0.5, 0.5);
+        driveTime(2000, 0.5, 0.5);
 
-        encoderDriveRight(6, -0.5, -0.5);
+        driveTime(1000, -0.5, -0.5);
 
         sleep(500);
         encoderDriveForward(42, 0.8, -0.8);
@@ -775,9 +821,9 @@ imuTurn(-15);
             sleep(wait);
     collectFlipperM.setPower(-0.5);
 
-    encoderDriveForward(5, 0, -0.5);
+    encoderDriveForward(5, 0, -1);
 
-            encoderDriveForward(1, 0, 0.5);
+            encoderDriveForward(1, 0, 1);
 
 
     encoderDriveForward(12, -0.8, 0);
