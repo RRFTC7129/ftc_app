@@ -56,6 +56,113 @@ public class CharonAutonomous extends LinearOpMode {
     }
     private LiftStage currentStage = LiftStage.IDLE;
 
+    public void collectMineral(){
+        pos = 0;
+
+        //Drive up to in front of the mineral
+//        encoderDriveRight(4, 1, 0);
+        encoderDriveForward(11, 0, 0.5);
+
+        //reset encoder for use in the code
+        extendM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        extendM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        //Extend the extension out and score the mineral
+        extendM.setPower(-1);
+        while (extendM.getCurrentPosition() > -3400 && !isStopRequested()){
+            telemetry.addData("current pos", extendM.getCurrentPosition());
+            telemetry.update();
+        }
+        extendM.setPower(0);
+        collectFlipperM.setPower(0.3);
+        collectSpinnerM.setPower(-1);
+
+        sleep(500);
+
+        //Drop the extension and pull it back in
+        collectFlipperM.setPower(0);
+        collectSpinnerM.setPower(0.6);
+        extendM.setPower(0.55);
+        while (extendM.getCurrentPosition() < -2400 && !isStopRequested()) {
+            telemetry.addData("current pos", extendM.getCurrentPosition());
+            telemetry.update();
+        }
+        //Turn to the correct mineral
+        extendM.setPower(0);
+        if(pos == 0) {
+            imuTurn(-44);
+
+        }
+        else if(pos == 2){
+            imuTurn(40);
+
+        }
+        else if(pos == 1){
+            //imuTurn(5);
+        }
+
+        //collect the mineral
+        extendM.setPower(0.5);
+        while (extendM.getCurrentPosition() < -400 && !isStopRequested()){
+            telemetry.addData("current pos", extendM.getCurrentPosition());
+            telemetry.update();
+        }
+        extendM.setPower(0);
+        collectSpinnerM.setPower(0);
+        collectFlipperM.setPower(-0.8);
+        sleep(400);
+        extendM.setPower(1);
+        while (extendM.getCurrentPosition() < -80 && !isStopRequested()){
+            telemetry.addData("current pos", extendM.getCurrentPosition());
+            telemetry.update();
+        }
+        extendM.setPower(0.5);
+        collectFlipperM.setPower(-1);
+        sleep(1000);
+        extendM.setPower(0);
+        collectFlipperM.setPower(0);
+        collectSpinnerM.setPower(1);
+        sleep(500);
+        collectSpinnerM.setPower(0);
+
+        //turn back to facing the lander
+        if(pos == 0) {
+            imuTurn(50);
+            encoderDriveRight(10, 1, 0);
+
+        }
+        else if(pos == 2){
+            imuTurn(-50);
+            encoderDriveForward(10, -1, 0);
+
+
+        }
+        else if(pos == 1){
+            //imuTurn(-5);
+        }
+
+        //Drive up to the lander and score
+        liftM.setPower(-1);
+        sleep(500);
+        encoderDriveForward(18, 0, -0.5);
+
+        dumpS.setPosition(1);
+        sleep(1000);
+        encoderDriveForward(10, 0, 0.5);
+        liftM.setPower(0);
+        imuTurn(-60);
+        encoderDriveForward(27, 1, 0);
+
+        imuTurn(-60);
+
+        encoderDriveForward(12, 0.5, 0.5);
+
+          encoderDriveForward(30, 0.5, -0.5);
+
+
+
+    }
+
     public void avoidPartner(){
         if (pos == 0){
             imuTurn(-40);
@@ -137,14 +244,14 @@ public class CharonAutonomous extends LinearOpMode {
 
     public  void  scoreMarker(){
 
-        collectFlipperM.setPower(0.4);
-        sleep(400);
         collectFlipperM.setPower(-0.4);
+        sleep(400);
+        collectFlipperM.setPower(0.4);
 
-        collectSpinnerM.setPower(-0.5);
+        collectSpinnerM.setPower(0.3);
 
         sleep(800);
-        collectFlipperM.setPower(-0.8);
+        collectFlipperM.setPower(0.8);
         sleep(800);
         collectSpinnerM.setPower(0);
         collectFlipperM.setPower(0);
@@ -250,6 +357,7 @@ public class CharonAutonomous extends LinearOpMode {
         rb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lf.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lb.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        drive.reset();
         while(millisecond > drive.milliseconds() &&!isStopRequested()) {
 
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
@@ -288,7 +396,7 @@ public class CharonAutonomous extends LinearOpMode {
         targetHeading += targetHeading > 360 ? -360 :
                 targetHeading <   0 ?  360 : 0;
 
-        while (Math.abs(degreesToTurn) > 2&&!isStopRequested()) {
+        while (Math.abs(degreesToTurn) > 2 && !isStopRequested()) {
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             currentHeading = -angles.firstAngle + 180;
             degreesToTurn = targetHeading - currentHeading;
@@ -322,7 +430,7 @@ public class CharonAutonomous extends LinearOpMode {
 
             if (gamepad1.b) {
                 telemetry.addData("depot ", "side");
-                telemetry.addData("press Y to ", "move on");
+                telemetry.addData("press Y to " , "move on");
                 telemetry.update();
                 side = true;
             } else if (gamepad1.x) {
@@ -570,7 +678,7 @@ imuTurn(-15);
         imuTurn(-45);
         driveTime(2000, 0.5, 0.5);
 
-        driveTime(1000, -0.5, -0.5);
+        driveTime(700, -0.5, -0.5);
 
         sleep(500);
         encoderDriveForward(42, 0.8, -0.8);
@@ -579,7 +687,7 @@ imuTurn(-15);
 
         encoderDriveForward(40, -0.8, 0.8);
 
-        imuTurn(55);
+        imuTurn(50);
 
         if (pos == 0){
             encoderDriveForward(17, -0.5, 0);
@@ -672,7 +780,7 @@ imuTurn(-15);
 
     }
 
-    @Override
+    //@Override
     public void runOpMode() {
         pos = 0;
 
@@ -771,8 +879,17 @@ imuTurn(-15);
             selection();
 
             waitForStart();
+//            telemetry.addData("atan",Math.atan2(1, 1.73));
+//            telemetry.addData("other",Math.tan(60));
+//            telemetry.addData("to radians",Math.toRadians(Math.tan(60)));
+//        telemetry.addData("to radians 2",Math.toRadians(60/360));
+//
+//
+//        telemetry.update();
+//        sleep(30000);
 
-
+       // collectMineral();
+        //sleep(30000);
 
 
             detector.enable(); // Start the detector!
@@ -826,14 +943,15 @@ imuTurn(-15);
             encoderDriveForward(1, 0, 1);
 
 
-    encoderDriveForward(12, -0.8, 0);
+    encoderDriveForward(12, -1, 0);
 
             liftM.setPower(0);
             sleep(100);
-    encoderDriveRight(4, 0.8, 0);
+    encoderDriveRight(4, 1, 0);
     collectFlipperM.setPower(0);
 
-
+        collectMineral();
+        sleep(300000);
 
 
     if (side) {
@@ -851,7 +969,8 @@ imuTurn(-15);
 
         if (follow) {
                     followPartner();
-                } else if (!follow) {
+                }
+                else if (!follow) {
                     if (marker) {
                         toBlockCraterMarker();
                     } else if (!marker) {

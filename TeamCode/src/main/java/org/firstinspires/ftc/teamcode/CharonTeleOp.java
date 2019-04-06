@@ -115,10 +115,10 @@ lock.setPower(0);
         else collectFlipperM.setPower(0);
 
         if(gamepad2.right_bumper || gamepad1.right_bumper){
-            dumpS.setPosition(1);
+            dumpS.setPosition(0.8);
         }
         else {
-            dumpS.setPosition(0);
+            dumpS.setPosition(0.2);
         }
 
         if(gamepad2.left_bumper){
@@ -176,7 +176,7 @@ lock.setPower(0);
                 revThat.reset();
 
             }
-            else if (gamepad2.left_stick_y == 0 && revThat.milliseconds() < 500){
+            else if (gamepad2.left_stick_y == 0 && revThat.milliseconds() < 500 && !gamepad2.left_bumper){
                 liftM.setPower(0.4);
             }
             else {
@@ -224,6 +224,7 @@ lock.setPower(0);
         if(rightX == 0){
             if (count < 10) {
                 angleTest[count] = angle;
+                angleTest[count] = angle;
                 count++;
             }
             else if (count >= 10){
@@ -245,11 +246,12 @@ lock.setPower(0);
         rf.setPower((-(speed * (Math.cos(angle))) + rightX));
         lb.setPower(((speed * (Math.cos(angle)) + rightX)));
         rb.setPower((-(speed * (Math.sin(angle))) + rightX));
-        telemetry.addData("buttoning", buttoning.milliseconds());
-        telemetry.addData("gp1", gamepad1.right_bumper);
-        telemetry.addData("gp2", gamepad2.right_bumper);
-        telemetry.update();
+//        telemetry.addData("buttoning", buttoning.milliseconds());
+//        telemetry.addData("gp1", gamepad1.right_bumper);
+//        telemetry.addData("gp2", gamepad2.right_bumper);
 
+        telemetry.addData("extendMPos",extendM.getCurrentPosition());
+        telemetry.update();
 
     }
 }
