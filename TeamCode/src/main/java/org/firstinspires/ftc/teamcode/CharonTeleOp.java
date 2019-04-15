@@ -19,7 +19,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 public class CharonTeleOp extends OpMode {
 
     public DcMotor lf, rf, lb, rb;
-    CRServo clampR, clampL, lock;
+    CRServo clampR, clampL, lock, dumpS;
     double rightX;
     double angle;
     double angleTest[] = new double[10];
@@ -33,7 +33,6 @@ public class CharonTeleOp extends OpMode {
     DcMotor extendM;
     DcMotor collectFlipperM;
     DcMotor collectSpinnerM;
-    Servo dumpS;
     private ColorSensor color;
     boolean first = true;
     int q = 1;
@@ -45,7 +44,6 @@ public class CharonTeleOp extends OpMode {
     private ElapsedTime buttoning = new ElapsedTime();
     private ElapsedTime popOFF = new ElapsedTime();
     private ElapsedTime revThat = new ElapsedTime();
-
 
     private enum LiftStage {
         IDLE, LIFTING, SLOWING, STOP
@@ -89,7 +87,7 @@ lock.setPower(0);
         collectSpinnerM = hardwareMap.dcMotor.get("collectSpinnerM");
         collectSpinnerM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        dumpS = hardwareMap.servo.get("dumpS");
+        dumpS = hardwareMap.crservo.get("dumpS");
         liftM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         liftM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         color = hardwareMap.get(ColorSensor.class, "color");
@@ -110,15 +108,19 @@ lock.setPower(0);
         extendM.setPower(gamepad2.right_stick_y);
         collectSpinnerM.setPower(q*gamepad2.right_trigger + p*gamepad2.left_trigger);
 
-        if     (gamepad2.dpad_down)   collectFlipperM.setPower(q*0.8);
-        else if(gamepad2.dpad_up) collectFlipperM.setPower(p*0.8);
+        if     (gamepad2.dpad_down)   collectFlipperM.setPower(q*0.9);
+        else if(gamepad2.dpad_up) collectFlipperM.setPower(p*0.9);
         else collectFlipperM.setPower(0);
 
-        if(gamepad2.right_bumper || gamepad1.right_bumper){
-            dumpS.setPosition(0.8);
+        if((gamepad2.right_bumper || gamepad1.right_bumper)){
+            dumpS.setPower(1);
+            dumping.reset();
+        }
+        else if(dumping.milliseconds() < 2000) {
+            dumpS.setPower(-1);
         }
         else {
-            dumpS.setPosition(0.2);
+            dumpS.setPower(0);
         }
 
         if(gamepad2.left_bumper){

@@ -38,6 +38,7 @@ public class CharonAutonomous extends LinearOpMode {
     String goldPosition;
     Boolean goldFound = false;
     int target;
+    boolean block = false;
 
     Boolean goldAligned = false;
     int wait = 0;
@@ -57,12 +58,11 @@ public class CharonAutonomous extends LinearOpMode {
     private LiftStage currentStage = LiftStage.IDLE;
 
     public void collectMineral(){
-        pos = 0;
-
+       // pos = 0;
         //Drive up to in front of the mineral
 //        encoderDriveRight(4, 1, 0);
         encoderDriveForward(11, 0, 0.5);
-
+        collectFlipperM.setPower(-0.5);
         //reset encoder for use in the code
         extendM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         extendM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -75,7 +75,7 @@ public class CharonAutonomous extends LinearOpMode {
         }
         extendM.setPower(0);
         collectFlipperM.setPower(0.3);
-        collectSpinnerM.setPower(-1);
+        collectSpinnerM.setPower(-0.5);
 
         sleep(500);
 
@@ -199,7 +199,7 @@ public class CharonAutonomous extends LinearOpMode {
         dumpS.setPosition(1);
         sleep(1000);
     }
-    public void Drop(){
+    public void Drop() {
         liftM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         liftM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lock.setPower(1);
@@ -221,6 +221,10 @@ public class CharonAutonomous extends LinearOpMode {
 //        while (timeout.milliseconds() < 2000){
 //            //if below the threshold, go up
 //            if(color.red() < redMargin) liftM.setPower(-0.9);
+////              if(YouAreReadingThis){
+////                imSurprised();
+////    }
+// }
 //            //if above the threshold, fall down
 //            else if (color.red() < redMargin)
 //                if (color.red() > redMargin) liftM.setPower(0.1);
@@ -244,14 +248,14 @@ public class CharonAutonomous extends LinearOpMode {
 
     public  void  scoreMarker(){
 
-        collectFlipperM.setPower(-0.4);
-        sleep(400);
         collectFlipperM.setPower(0.4);
+        sleep(400);
+        collectFlipperM.setPower(-0.4);
 
-        collectSpinnerM.setPower(0.3);
+        collectSpinnerM.setPower(-0.5);
 
         sleep(800);
-        collectFlipperM.setPower(0.8);
+        collectFlipperM.setPower(-0.8);
         sleep(800);
         collectSpinnerM.setPower(0);
         collectFlipperM.setPower(0);
@@ -444,7 +448,7 @@ public class CharonAutonomous extends LinearOpMode {
         }
 
         if (side) {
-            telemetry.addData("Press B ", "for two block");
+            telemetry.addData("Press B ", "for mineral");
             telemetry.addData("Press X ", "for one");
             telemetry.addData("Press Right bumper ", "for opposite");
 
@@ -453,14 +457,14 @@ public class CharonAutonomous extends LinearOpMode {
             while (!opModeIsActive() && !gamepad1.a) {
 
                 if (gamepad1.b) {
-                    telemetry.addData("Two ", "block");
+                    telemetry.addData("Dropping ", "mineral");
                     telemetry.addData("press A to ", "move on");
-                    two = true;
+                    block = true;
                     telemetry.update();
                 } else if (gamepad1.x) {
                     telemetry.addData("One ", "block");
                     telemetry.addData("press A to ", "move on");
-                    two = false;
+                    block = false;
 
                     telemetry.update();
                 }
@@ -503,24 +507,46 @@ public class CharonAutonomous extends LinearOpMode {
             }
         }
 
-        telemetry.addData("Press ","Dpad up for more wait");
-        telemetry.addData("Press ","Dpad down for not more wait");
-        telemetry.update();
-        while(!opModeIsActive()){
-       if(gamepad1.dpad_up){
-           wait = wait + 1000;
-           sleep(300);
-       }
-       else if (gamepad1.dpad_down){
-           wait = wait - 1000;
-           sleep(300);
-           if(wait < 0){
-               wait = 0;
-           }
-       }
-            telemetry.addData("Waiting for:", wait);
-            telemetry.update();
+        wait = 0;
+        if(side) {
+            telemetry.addData("Position", "depot");
+                    if(block) {
+                        telemetry.addData("collecting and scoring", block);
+                    }
+                    else{
+                        telemetry.addData("Parking in own", "Crater");
+                    }
+
         }
+        else if (!side){
+            telemetry.addData("Position", "crater");
+                if(marker){
+                    telemetry.addData("scoring team","marker");
+
+                }
+                else{
+                    telemetry.addData("no marker"," ");
+            }
+        }
+        telemetry.update();
+//        telemetry.addData("Press ","Dpad up for more wait");
+//        telemetry.addData("Press ","Dpad down for not more wait");
+//        telemetry.update();
+//        while(!opModeIsActive()){
+//       if(gamepad1.dpad_up){
+//           wait = wait + 1000;
+//           sleep(300);
+//       }
+//       else if (gamepad1.dpad_down){
+//           wait = wait - 1000;
+//           sleep(300);
+//           if(wait < 0){
+//               wait = 0;
+//           }
+//       }
+//            telemetry.addData("Waiting for:", wait);
+//            telemetry.update();
+//        }
     }
 
     public  void toBlockTwo(){
@@ -947,20 +973,22 @@ imuTurn(-15);
 
             liftM.setPower(0);
             sleep(100);
-    encoderDriveRight(4, 1, 0);
+    encoderDriveRight(3, 1, 0);
     collectFlipperM.setPower(0);
+        //imuTurn(-3);
 
-        collectMineral();
-        sleep(300000);
+
+//        collectMineral();
+//        sleep(300000);
 
 
     if (side) {
                 if(follow){
                     avoidPartner();
                 }
-                else if (two) {
-                    toBlockTwo();
-                } else if (!two) {
+                else if (block) {
+                    collectMineral();
+                } else if (!block) {
                     toBlockPark();
                 }
 
